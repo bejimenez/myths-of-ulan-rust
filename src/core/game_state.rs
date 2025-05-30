@@ -49,7 +49,7 @@ impl GameState {
 
         match cmd.as_str() {
             "help" | "h" => self.show_help(),
-            "status" | "s" => self.show_status(),
+            "status" | "c" => self.show_status(),
             "look" | "l" => self.look(),
             "north" | "n" => self.move_direction(Direction::North),
             "south" | "s" => self.move_direction(Direction::South),
@@ -76,7 +76,7 @@ impl GameState {
     fn show_help(&self) {
         println!("\n=== Available Commands ===");
         println!("help (h)  - Show this help message");
-        println!("status (s)    - Show your character's status");
+        println!("status (c)    - Show your character's status");
         println!("look (l)  - Look around the room");
         println!("north (n) - Move north");
         println!("south (s) - Move south");
@@ -93,7 +93,7 @@ impl GameState {
             println!("No player created yet!");
         }
     }
-    fn look(&self) {
+    pub fn look(&self) {
         if let Some(dungeon) = &self.dungeon {
             dungeon.display_current_room();
         }
@@ -109,6 +109,18 @@ impl GameState {
             };
 
             match dungeon.move_player(dx, dy) {
+                Ok(msg) => {
+                    println!("{}", msg);
+                    dungeon.display_current_room();
+                }
+                Err(msg) => println!("{}", msg),
+            }
+        }
+    }
+    
+    fn go_direction(&mut self, direction: Direction) {
+        if let Some(dungeon) = &mut self.dungeon {
+            match dungeon.change_room(direction) {
                 Ok(msg) => {
                     println!("{}", msg);
                     dungeon.display_current_room();

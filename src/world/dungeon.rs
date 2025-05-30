@@ -16,7 +16,7 @@ impl Dungeon {
         let mut rooms = HashMap::new();
 
         // Create entrance room
-        let must entrance = Room::new(
+        let mut entrance = Room::new(
             "entrance".to_string(),
             "Dungeon Entrance".to_string(),
             "A dimly lit stone chamber. The air is damp and cold.".to_string(),
@@ -40,7 +40,7 @@ impl Dungeon {
         hallway.connections.insert(Direction::East, "chamber".to_string());
 
         // create chamber
-        let mute chamber = Room::new(
+        let mut chamber = Room::new(
             "chamber".to_string(),
             "Ancient Chamber".to_string(),
             "The walls of this room are covered in mysterious symbols.".to_string(),
@@ -48,7 +48,7 @@ impl Dungeon {
             10
         );
         chamber.add_door(Direction::West, 0, 5);
-        chamber.connections(Direction::West, "hallway".to_string());
+        chamber.connections.insert(Direction::West, "hallway".to_string());
 
         // Add stairs to chamber
         chamber.tiles[5][7] = TileType::Stairs;

@@ -4,13 +4,10 @@ use myths_of_ulan_rust::core::GameState;
 fn main() {
     let mut game = GameState::new();
 
-    // Create Player
     game.create_player();
 
-    // Show initial room
     game.look();
-
-    println!("\n Type 'help' for available commands.");
+    println!("\nType 'help' for available commands.");
 
     // Main game loop   
     while game.running {
