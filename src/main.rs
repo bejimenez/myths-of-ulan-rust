@@ -7,10 +7,8 @@ fn main() {
     // Create Player
     game.create_player();
 
-    // Show initial status
-    if let Some(player) = &game.player {
-        player.display_status();
-    }
+    // Show initial room
+    game.look();
 
     println!("\n Type 'help' for available commands.");
 
