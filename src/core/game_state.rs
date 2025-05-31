@@ -1,5 +1,5 @@
 use crate::entities::Player;
-use crate::world::{Dungeon, Direction};
+use crate::world::{Dungeon, Direction, DungeonGenerator, GeneratorConfig, SimpleGenerator};
 use std::io::{self, Write};
 
 pub struct GameState {
@@ -34,9 +34,29 @@ impl GameState {
             println!("\nWelcome, {}!", name);
         }
 
-        // Create the test dungeon
-        self.dungeon = Some(Dungeon::new_test_dungeon());
-        println!("\nYou descend into the dungeon...\n");
+        // Create the procedural dungeon
+        println!("\nGenerating dungeon...");
+        let generator = SimpleGenerator::new();
+        let config = GeneratorConfig::default();
+
+        // Use current time as seed for variety, or use a fixed seed for debugging
+        let seed = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+
+        match generator.generate(&config, seed) {
+            Ok(dungeon) => {
+                println!("Dungeon generated with {} rooms!", dungeon.rooms.len());
+                self.dungeon = Some(dungeon);
+                println!("\nYou descend into the dungeon...\n");
+            }
+            Err(e) => {
+                println!("Failed to generate dungeon: {}", e);
+                println!("creating fallback dungeon...");
+                self.dungeon = Some(Dungeon::new_test_dungeon());
+            }
+        }
     }
 
     pub fn process_command(&mut self, command: &str) {

@@ -72,7 +72,7 @@ impl Room {
         }
     }
 
-    pub fn add_door(&mut self, direction: Direction, x: usize, y: usize) {
+    pub fn add_door(&mut self, _direction: Direction, x: usize, y: usize) {
         if x < self.width && y < self.height {
             self.tiles[y][x] = TileType::Door;
         }
