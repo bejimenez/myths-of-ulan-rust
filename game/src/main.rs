@@ -33,7 +33,6 @@ fn main() {
                 movement_system,
                 combat_system,
                 ui_system,
-                message_log_system,
             )
                 .chain() // Ensures systems run in order
                 .run_if(in_state(GameState::Playing)),
@@ -166,7 +165,11 @@ struct CombatEvent {
 // ===== SYSTEMS =====
 // Functions that operate on entities with specific components
 
-fn setup_game(mut commands: Commands, mut next_state: ResMut<NextState<GameState>>) {
+fn setup_game(
+    mut commands: Commands, 
+    mut next_state: ResMut<NextState<GameState>>,
+    mut message_log: ResMut<MessageLog>,
+) {
     // Spawn the player entity
     commands.spawn((
         Player,
@@ -212,6 +215,16 @@ fn setup_game(mut commands: Commands, mut next_state: ResMut<NextState<GameState
             evasion: 15,
         },
     ));
+    
+    // Add initial message
+    message_log.add(
+        "Welcome to Myths of Ulan! Use WASD or arrow keys to move.".to_string(),
+        Color::LIME_GREEN
+    );
+    message_log.add(
+        "A goblin lurks at position (5, 5). Approach carefully!".to_string(),
+        Color::YELLOW
+    );
 
     // Start at main menu
     next_state.set(GameState::MainMenu);
@@ -273,39 +286,78 @@ fn player_input_system(
 fn movement_system(
     mut commands: Commands,
     mut player_commands: EventReader<PlayerCommand>,
-    mut player_query: Query<(&mut Position, Entity), With<Player>>,
-    monster_query: Query<(&Position, Entity), (With<Monster>, Without<Player>)>,
+    mut player_query: Query<(&mut Position, Entity, &Name), With<Player>>,
+    monster_query: Query<(&Position, Entity, &Name), (With<Monster>, Without<Player>)>,
     mut combat_events: EventWriter<CombatEvent>,
     mut message_log: ResMut<MessageLog>,
+    mut game_world: ResMut<GameWorld>,
 ) {
     for command in player_commands.read() {
-        if let PlayerCommand::Move { dx, dy } = command {
-            if let Ok((mut player_pos, player_entity)) = player_query.get_single_mut() {
-                let new_x = player_pos.x + dx;
-                let new_y = player_pos.y + dy;
-                
-                // Check for collision with monsters
-                let mut blocked = false;
-                for (monster_pos, monster_entity) in monster_query.iter() {
-                    if monster_pos.x == new_x && monster_pos.y == new_y && monster_pos.level == player_pos.level {
-                        // Initiate combat instead of moving
-                        combat_events.send(CombatEvent {
-                            attacker: player_entity,
-                            defender: monster_entity,
-                            damage: 0, // Will be calculated in combat system
-                        });
-                        blocked = true;
-                        break;
+        match command {
+            PlayerCommand::Move { dx, dy } => {
+                if let Ok((mut player_pos, player_entity, player_name)) = player_query.get_single_mut() {
+                    let new_x = player_pos.x + dx;
+                    let new_y = player_pos.y + dy;
+                    
+                    // Check for collision with monsters
+                    let mut blocked = false;
+                    for (monster_pos, monster_entity, monster_name) in monster_query.iter() {
+                        if monster_pos.x == new_x && monster_pos.y == new_y && monster_pos.level == player_pos.level {
+                            // Monster encountered!
+                            message_log.add(
+                                format!("You encounter a {}!", monster_name.0), 
+                                Color::YELLOW
+                            );
+                            
+                            // Initiate combat instead of moving
+                            combat_events.send(CombatEvent {
+                                attacker: player_entity,
+                                defender: monster_entity,
+                                damage: 0, // Will be calculated in combat system
+                            });
+                            blocked = true;
+                            break;
+                        }
+                    }
+                    
+                    // TODO: Check for wall collisions when we have dungeon generation
+                    
+                    // Move if not blocked
+                    if !blocked {
+                        player_pos.x = new_x;
+                        player_pos.y = new_y;
+                        
+                        // Only increment turn count on successful actions
+                        game_world.turn_count += 1;
+                        
+                        // Add movement message with turn count
+                        message_log.add(
+                            format!("Turn {}: You move to ({}, {})", game_world.turn_count, new_x, new_y), 
+                            Color::WHITE
+                        );
+                        
+                        // Check if any monsters are adjacent after moving
+                        for (monster_pos, _, monster_name) in monster_query.iter() {
+                            let dx = (monster_pos.x - new_x).abs();
+                            let dy = (monster_pos.y - new_y).abs();
+                            if monster_pos.level == player_pos.level && dx <= 1 && dy <= 1 {
+                                message_log.add(
+                                    format!("You see a {} nearby!", monster_name.0),
+                                    Color::ORANGE_RED
+                                );
+                            }
+                        }
                     }
                 }
-                
-                // Move if not blocked
-                if !blocked {
-                    player_pos.x = new_x;
-                    player_pos.y = new_y;
-                    message_log.add(format!("You move to ({}, {})", new_x, new_y), Color::WHITE);
-                }
-            }
+            },
+            PlayerCommand::Wait => {
+                game_world.turn_count += 1;
+                message_log.add(
+                    format!("Turn {}: You wait.", game_world.turn_count),
+                    Color::GRAY
+                );
+            },
+            _ => {} // Handle other commands as needed
         }
     }
 }
@@ -397,7 +449,11 @@ fn ui_system(
             .max_height(150.0)
             .stick_to_bottom(true)
             .show(ui, |ui| {
-                for (message, color) in message_log.messages.iter().rev().take(10) {
+                // Show messages in chronological order (oldest first)
+                let message_count = message_log.messages.len();
+                let start_index = if message_count > 20 { message_count - 20 } else { 0 };
+                
+                for (message, color) in message_log.messages[start_index..].iter() {
                     ui.colored_label(egui::Color32::from_rgb(
                         (color.r() * 255.0) as u8,
                         (color.g() * 255.0) as u8,
@@ -408,10 +464,4 @@ fn ui_system(
     });
 }
 
-fn message_log_system(
-    mut message_log: ResMut<MessageLog>,
-    mut game_world: ResMut<GameWorld>,
-) {
-    // This system could handle turn counting and other per-frame updates
-    game_world.turn_count += 1;
-}
+// Remove the message_log_system - we don't need it updating every frame
