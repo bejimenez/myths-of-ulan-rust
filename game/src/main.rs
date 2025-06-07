@@ -12,15 +12,20 @@ fn main() {
             }),
             ..default()
         }))
-        .add_plugins(EquiPlugin)
-        .add_state::<GameState>()
+        .add_plugins(EguiPlugin)
+        // Game States
+        .init_state::<GameState>()
+        // Resources
         .init_resource::<GameWorld>()
         .init_resource::<MessageLog>()
+        // Events
         .add_event::<CombatEvent>()
         .add_event::<PlayerCommand>()
+        // Startup Systems
         .add_systems(Startup, setup_game)
-        .add_systems(Update, main_menu.run_if(in_state(GameState::MainMenu)))
-
+        // Update Systems - Menu State
+        .add_systems(Update, main_menu_system.run_if(in_state(GameState::MainMenu)))
+        // Update Systems - Playing State
         .add_systems(
             Update,
             (
@@ -30,13 +35,13 @@ fn main() {
                 ui_system,
                 message_log_system,
             )
-                .chain()
+                .chain() // Ensures systems run in order
                 .run_if(in_state(GameState::Playing)),
-            )
+        )
         .run();
 }
 
-// === GAME STATES ===
+// ===== GAME STATES =====
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, States)]
 enum GameState {
     #[default]
@@ -46,7 +51,7 @@ enum GameState {
     GameOver,
 }
 
-// === COMPONENTS ===
+// ===== COMPONENTS =====
 // These are the "data" attached to entities
 
 #[derive(Component)]
@@ -68,7 +73,7 @@ struct Position {
 }
 
 #[derive(Component)]
-stuct Health {
+struct Health {
     current: i32,
     max: i32,
 }
@@ -101,7 +106,7 @@ struct Item {
     stack_size: u32,
 }
 
-// === ENUMS & TYPES ===
+// ===== ENUMS & TYPES =====
 #[derive(Debug, Clone)]
 enum AIType {
     Aggressive,
@@ -117,8 +122,8 @@ enum ItemType {
     Gold { amount: u32 },
 }
 
-// === RESOURCES ===
-// Global data shared across systems    
+// ===== RESOURCES =====
+// Global data shared across systems
 
 #[derive(Resource, Default)]
 struct GameWorld {
@@ -142,7 +147,7 @@ impl MessageLog {
     }
 }
 
-// === EVENTS ===
+// ===== EVENTS =====
 #[derive(Event)]
 enum PlayerCommand {
     Move { dx: i32, dy: i32 },
@@ -158,57 +163,57 @@ struct CombatEvent {
     damage: i32,
 }
 
-// === SYSTEMS ===
+// ===== SYSTEMS =====
 // Functions that operate on entities with specific components
 
 fn setup_game(mut commands: Commands, mut next_state: ResMut<NextState<GameState>>) {
-    // Spawn the player Entity
+    // Spawn the player entity
     commands.spawn((
-            Player,
-            Name("Hero".to_string()),
-            Position { x: 0, y: 0, level: 1 },
-            Health { current: 100, max: 100 },
-            Stats {
-                strength: 10,
-                dexterity: 10,
-                intelligence: 10,
-                constitution: 10,
-            },
-            CombatStats {
-                damage: 5,
-                defense: 2,
-                accuracy: 85,
-                evasion: 10,
-            },
-            Inventory {
-                items: Vec::new(),
-                capactiy: 20,
-            },
-        ));
+        Player,
+        Name("Hero".to_string()),
+        Position { x: 0, y: 0, level: 1 },
+        Health { current: 100, max: 100 },
+        Stats {
+            strength: 10,
+            dexterity: 10,
+            intelligence: 10,
+            constitution: 10,
+        },
+        CombatStats {
+            damage: 5,
+            defense: 2,
+            accuracy: 85,
+            evasion: 10,
+        },
+        Inventory {
+            items: Vec::new(),
+            capacity: 20,
+        },
+    ));
 
-    // Spawn a test Monster
+    // Spawn a test monster
     commands.spawn((
-            Monster {
-                ai_type: AIType::Aggressive,
-            },
-            Name("Goblin".to_string()),
-            Position { x: 5, y: 5, level: 1 },
-            Health { current: 30, max: 30 },
-            Stats {
-                strength: 6,
-                dexterity: 8,
-                intelligence: 4,
-                constitution: 6,
-            },
-            CombatStats {
-                damage: 3,
-                defense: 1,
-                accuracy: 70,
-                evasion: 15,
-            },
-        ));
+        Monster {
+            ai_type: AIType::Aggressive,
+        },
+        Name("Goblin".to_string()),
+        Position { x: 5, y: 5, level: 1 },
+        Health { current: 30, max: 30 },
+        Stats {
+            strength: 6,
+            dexterity: 8,
+            intelligence: 4,
+            constitution: 6,
+        },
+        CombatStats {
+            damage: 3,
+            defense: 1,
+            accuracy: 70,
+            evasion: 15,
+        },
+    ));
 
-    // Start at main menu   
+    // Start at main menu
     next_state.set(GameState::MainMenu);
 }
 
@@ -219,21 +224,21 @@ fn main_menu_system(
     egui::CentralPanel::default().show(contexts.ctx_mut(), |ui| {
         ui.vertical_centered(|ui| {
             ui.add_space(100.0);
-
+            
             ui.heading("MYTHS OF ULAN");
             ui.add_space(20.0);
             ui.label("A Retro Fantasy RPG");
-
+            
             ui.add_space(50.0);
-
+            
             if ui.button("New Game").clicked() {
                 next_state.set(GameState::Playing);
             }
-
+            
             if ui.button("Load Game").clicked() {
                 // TODO: Implement load game
             }
-
+            
             if ui.button("Quit").clicked() {
                 std::process::exit(0);
             }
@@ -242,24 +247,24 @@ fn main_menu_system(
 }
 
 fn player_input_system(
-    keyboard: Res<Input<KeyCode>>,
+    keyboard: Res<ButtonInput<KeyCode>>,
     mut player_commands: EventWriter<PlayerCommand>,
 ) {
-    // Movement keys    
-    if keyboard.just_pressed(KeyCode::W) || keyboard.just_pressed(KeyCode::Up) {
+    // Movement keys
+    if keyboard.just_pressed(KeyCode::KeyW) || keyboard.just_pressed(KeyCode::ArrowUp) {
         player_commands.send(PlayerCommand::Move { dx: 0, dy: -1 });
     }
-    if keyboard.just_pressed(KeyCode::S) || keyboard.just_pressed(KeyCode::Down) {
-        player_commands.send(PlayerCommand:: Move { dx: 0, dy: 1 });
+    if keyboard.just_pressed(KeyCode::KeyS) || keyboard.just_pressed(KeyCode::ArrowDown) {
+        player_commands.send(PlayerCommand::Move { dx: 0, dy: 1 });
     }
-    if keyboard.just_pressed(KeyCode::A) || keyboard.just_pressed(KeyCode::Left) {
-        player_commands.send(PlayerCommand:: Move { dx: -1, dy: 0 });
+    if keyboard.just_pressed(KeyCode::KeyA) || keyboard.just_pressed(KeyCode::ArrowLeft) {
+        player_commands.send(PlayerCommand::Move { dx: -1, dy: 0 });
     }
-    if keyboard.just_pressed(KeyCode::D) || keyboard.just_pressed(KeyCode::Right) {
-        player_commands.send(PlayerCommand:: Move { dx: 1, dy: 0 });
+    if keyboard.just_pressed(KeyCode::KeyD) || keyboard.just_pressed(KeyCode::ArrowRight) {
+        player_commands.send(PlayerCommand::Move { dx: 1, dy: 0 });
     }
-
-    // Wait/Skip turn   
+    
+    // Wait/Skip turn
     if keyboard.just_pressed(KeyCode::Space) {
         player_commands.send(PlayerCommand::Wait);
     }
@@ -278,7 +283,7 @@ fn movement_system(
             if let Ok((mut player_pos, player_entity)) = player_query.get_single_mut() {
                 let new_x = player_pos.x + dx;
                 let new_y = player_pos.y + dy;
-
+                
                 // Check for collision with monsters
                 let mut blocked = false;
                 for (monster_pos, monster_entity) in monster_query.iter() {
@@ -287,13 +292,14 @@ fn movement_system(
                         combat_events.send(CombatEvent {
                             attacker: player_entity,
                             defender: monster_entity,
-                            damage: 0, // Will be calculated in the combat system
+                            damage: 0, // Will be calculated in combat system
                         });
                         blocked = true;
                         break;
                     }
                 }
-                // Move if not blocked  
+                
+                // Move if not blocked
                 if !blocked {
                     player_pos.x = new_x;
                     player_pos.y = new_y;
@@ -313,21 +319,21 @@ fn combat_system(
     mut message_log: ResMut<MessageLog>,
 ) {
     for event in combat_events.read() {
-        // Get attacker stats   
+        // Get attacker stats
         if let Ok(attacker_stats) = combat_stats_query.get(event.attacker) {
             if let Ok(defender_stats) = combat_stats_query.get(event.defender) {
-                // Simple combat calculation    
+                // Simple combat calculation
                 let hit_chance = attacker_stats.accuracy - defender_stats.evasion;
                 let hit_roll = rand::random::<i32>() % 100;
-
+                
                 if hit_roll < hit_chance {
                     // Calculate damage
                     let damage = (attacker_stats.damage - defender_stats.defense).max(1);
-
+                    
                     // Apply damage
                     if let Ok(mut defender_health) = health_query.get_mut(event.defender) {
                         defender_health.current -= damage;
-
+                        
                         // Get names for message
                         let attacker_name = name_query.get(event.attacker)
                             .map(|n| n.0.clone())
@@ -335,14 +341,14 @@ fn combat_system(
                         let defender_name = name_query.get(event.defender)
                             .map(|n| n.0.clone())
                             .unwrap_or("Unknown".to_string());
-
+                        
                         message_log.add(
                             format!("{} hits {} for {} damage!", attacker_name, defender_name, damage),
                             Color::RED
                         );
-
-                        // Check for death  
-                        if defneder_health_current <= 0 {
+                        
+                        // Check for death
+                        if defender_health.current <= 0 {
                             message_log.add(
                                 format!("{} has been slain!", defender_name),
                                 Color::DARK_GRAY
@@ -354,7 +360,7 @@ fn combat_system(
                     let attacker_name = name_query.get(event.attacker)
                         .map(|n| n.0.clone())
                         .unwrap_or("Unknown".to_string());
-                    message.add(format!("{} misses!", attacker_name), Color::GRAY);
+                    message_log.add(format!("{} misses!", attacker_name), Color::GRAY);
                 }
             }
         }
@@ -367,8 +373,8 @@ fn ui_system(
     game_world: Res<GameWorld>,
     message_log: Res<MessageLog>,
 ) {
-    // Stats Panel  
-    equi::TopBottomPanel::top("stats_panel").show(contexts.ctx_mut(), |ui| {
+    // Stats Panel
+    egui::TopBottomPanel::top("stats_panel").show(contexts.ctx_mut(), |ui| {
         if let Ok((health, stats, position)) = player_query.get_single() {
             ui.horizontal(|ui| {
                 ui.label(format!("HP: {}/{}", health.current, health.max));
@@ -378,13 +384,13 @@ fn ui_system(
                 ui.label(format!("INT: {}", stats.intelligence));
                 ui.label(format!("CON: {}", stats.constitution));
                 ui.separator();
-                ui.label(format!("Postion: ({}, {})", position.x, position.y));
+                ui.label(format!("Position: ({}, {})", position.x, position.y));
                 ui.label(format!("Level: {}", position.level));
             });
         }
     });
-
-    // Message log  
+    
+    // Message Log
     egui::TopBottomPanel::bottom("message_log").show(contexts.ctx_mut(), |ui| {
         ui.label("Message Log:");
         egui::ScrollArea::vertical()
@@ -393,10 +399,10 @@ fn ui_system(
             .show(ui, |ui| {
                 for (message, color) in message_log.messages.iter().rev().take(10) {
                     ui.colored_label(egui::Color32::from_rgb(
-                            (color.r() * 255.0) as u8,
-                            (color.g() * 255.0) as u8,
-                            (color.b() * 255.0) as u8,
-                            ), message);
+                        (color.r() * 255.0) as u8,
+                        (color.g() * 255.0) as u8,
+                        (color.b() * 255.0) as u8,
+                    ), message);
                 }
             });
     });
@@ -406,6 +412,6 @@ fn message_log_system(
     mut message_log: ResMut<MessageLog>,
     mut game_world: ResMut<GameWorld>,
 ) {
-    // This system could handle turn counting and other per-frame Update
+    // This system could handle turn counting and other per-frame updates
     game_world.turn_count += 1;
 }
