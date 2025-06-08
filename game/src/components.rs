@@ -1,5 +1,6 @@
 // src/components.rs
 use bevy::prelude::*;
+use serde::{Deserialize, Serialize};
 
 #[derive(Component)]
 pub struct Player;
@@ -54,7 +55,7 @@ pub struct Item {
 }
 
 // --- Helper Enums ---
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum AIType {
     Aggressive,
     Defensive,

@@ -2,14 +2,13 @@
 
 use bevy::prelude::*;
 use crate::components::{Monster, Player};
-use crate::game_state::GameState;
 use crate::plugins::combat::AttackEvent;
 use crate::resources::TurnState;
 
 pub struct MonsterPlugin;
 
 impl Plugin for MonsterPlugin {
-    fn build(&self, app: &mut App) {
+    fn build(&self, _app: &mut App) {
         // We move the system registration to the CombatPlugin
         // to ensure its execution order is correct relative to other combat systems.
         // This file now just defines the system itself.

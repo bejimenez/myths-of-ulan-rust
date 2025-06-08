@@ -96,6 +96,30 @@ impl MonsterTemplateRegistry {
         self.templates.get(id)
     }
     
+    /// Get all templates that can spawn within the given level range
+    pub fn get_templates_for_level_range(&self, min_level: i32, max_level: i32) -> Vec<&MonsterTemplate> {
+        self.templates.values()
+            .filter(|template| {
+                template.level_range.0 <= max_level && template.level_range.1 >= min_level
+            })
+            .collect()
+    }
+    
+    /// Get all template IDs
+    pub fn get_all_template_ids(&self) -> Vec<&String> {
+        self.templates.keys().collect()
+    }
+    
+    /// Get all templates
+    pub fn get_all_templates(&self) -> impl Iterator<Item = &MonsterTemplate> {
+        self.templates.values()
+    }
+    
+    /// Get the number of registered templates
+    pub fn count(&self) -> usize {
+        self.templates.len()
+    }
+    
     fn register_default_templates(&mut self) {
         // Basic Goblin
         self.register(MonsterTemplate {

@@ -54,11 +54,8 @@ pub fn random_monster_spawn_system(
             filter.iter().map(|s| s.as_str()).collect()
         } else {
             // Get all templates that can spawn in the requested level range
-            registry.templates.values()
-                .filter(|t| {
-                    t.level_range.0 <= event.level_range.1 && 
-                    t.level_range.1 >= event.level_range.0
-                })
+            registry.get_templates_for_level_range(event.level_range.0, event.level_range.1)
+                .iter()
                 .map(|t| t.id.as_str())
                 .collect()
         };
@@ -123,11 +120,8 @@ pub fn get_appropriate_monsters_for_level(
     registry: &MonsterTemplateRegistry,
     dungeon_level: i32,
 ) -> Vec<String> {
-    registry.templates.values()
-        .filter(|template| {
-            dungeon_level >= template.level_range.0 && 
-            dungeon_level <= template.level_range.1
-        })
+    registry.get_templates_for_level_range(dungeon_level, dungeon_level)
+        .iter()
         .map(|template| template.id.clone())
         .collect()
 }
