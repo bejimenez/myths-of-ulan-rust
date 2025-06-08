@@ -1,0 +1,70 @@
+# =========================================================================
+# Rust & Cargo
+# =========================================================================
+
+# The 'target' directory is where all build artifacts and compiled dependencies
+# are stored. It can become very large and should never be versioned.
+# The leading slash ensures it only matches the root target directory.
+/target/
+
+# In a binary project (like a Bevy game), you SHOULD commit Cargo.lock.
+# It ensures that you and your collaborators use the exact same dependency
+# versions, leading to reproducible builds.
+# Do NOT uncomment the following line for a game/application.
+# Cargo.lock
+
+# In case of local cargo configuration overrides
+Cargo.toml.local
+
+# =========================================================================
+# Bevy Specific
+# =========================================================================
+
+# Compiled shader files (SPIR-V).
+# The source .wgsl files should be committed, but the compiled output should not.
+*.spv
+*.spv.json
+
+# Bevy asset meta files if you choose not to commit them (most people do commit them)
+# *.meta
+
+# =========================================================================
+# General
+# =========================================================================
+
+# Log files
+*.log
+*.log.*
+
+# =========================================================================
+# Editor & IDE specific
+# =========================================================================
+
+# VS Code
+.vscode/
+
+# JetBrains (CLion, RustRover, etc.)
+.idea/
+
+# Vim
+*.swp
+*.swo
+
+# Emacs
+*#
+.#*
+
+# =========================================================================
+# Operating System specific
+# =========================================================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
