@@ -1,1 +1,2 @@
-/// src/templates/mod.rs
+// src/templates/mod.rs
+pub mod monster_templates;

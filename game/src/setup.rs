@@ -3,12 +3,18 @@ use bevy::prelude::*;
 use crate::components::*;
 use crate::game_state::GameState;
 use crate::resources::MessageLog;
+use crate::templates::monster_templates::{MonsterTemplateRegistry, spawn_monster_from_template};
 
 pub fn setup_game(
     mut commands: Commands,
     mut next_state: ResMut<NextState<GameState>>,
     mut message_log: ResMut<MessageLog>,
 ) {
+    // Initialize the monster template MonsterTemplateRegistry
+    let monster_registry = MonsterTemplateRegistry::new();
+    commands.insert_resource(monster_registry);
+
+    // Spawn the player
     commands.spawn((
         Player,
         Name("Hero".to_string()),
@@ -18,24 +24,36 @@ pub fn setup_game(
         CombatStats { damage: 5, defense: 2, accuracy: 85, evasion: 10 },
         Inventory { items: Vec::new(), capacity: 20 },
     ));
+    
+    // Access the registry we just created 
+    let registry = commands.get_resource::<MonsterTemplateRegistry>().unwrap();
 
-    commands.spawn((
-        Monster { ai_type: AIType::Aggressive },
-        Name("Goblin".to_string()),
+    // Spawn a Raging Goblin using the template spawn_monster_from_template
+    spawn_monster_from_template(
+        &mut commands,
+        &registry,
+        "raging_goblin",
         Position { x: 5, y: 5, level: 1 },
-        Health { current: 30, max: 30 },
-        Stats { strength: 6, dexterity: 8, intelligence: 4, constitution: 6 },
-        CombatStats { damage: 3, defense: 1, accuracy: 70, evasion: 15 },
-    ));
+        Some(4), // Spawn at level 4
+    );
+
+    // Spawn a regular goblin at a random level within its range 
+    spawn_monster_from_template(
+        &mut commands,
+        &registry,
+        "goblin",
+        Position { x: -3, y: 2, level: 1 },
+        None, //let the system choose a random level
+    );
 
     message_log.add(
-        "Welcome to Myths of Ulan!".to_string(),
+        "Welcom to Myths of Ulan! The template system is now active.".to_string(),
         Color::LIME_GREEN,
-    );
+        );
     message_log.add(
-        "A goblin continues to lurk at (5, 5).".to_string(),
+        "A Raging Goblin lurks at (5,5) and a regular Goblin at (-3, 2).".to_string(),
         Color::YELLOW,
-    );
+        );
 
     next_state.set(GameState::MainMenu);
 }

@@ -1,5 +1,6 @@
 // src/components.rs
 use bevy::prelude::*;
+use crate::components::Position;
 
 #[derive(Component)]
 pub struct Player;
