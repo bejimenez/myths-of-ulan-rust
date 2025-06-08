@@ -1,6 +1,13 @@
 // src/resources.rs
 use bevy::prelude::*;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Resource)]
+pub enum TurnState {
+    #[default]
+    PlayerTurn,
+    MonsterTurn,
+}
+
 #[derive(Resource, Default)]
 pub struct GameWorld {
     pub current_dungeon: Option<String>,

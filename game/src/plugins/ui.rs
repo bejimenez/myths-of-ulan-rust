@@ -16,7 +16,10 @@ impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
         app
             .add_systems(Update, main_menu_system.run_if(in_state(GameState::MainMenu)))
-            .add_systems(Update, ui_system.run_if(in_state(GameState::Playing)));
+            .add_systems(
+                Update,
+                ui_system.run_if(in_state(GameState::Exploring).or_else(in_state(GameState::InCombat)))
+        );
     }
 }
 
@@ -27,7 +30,7 @@ fn main_menu_system(mut contexts: EguiContexts, mut next_state: ResMut<NextState
             ui.heading("MYTHS OF ULAN");
             ui.add_space(50.0);
             if ui.button("New Game").clicked() {
-                next_state.set(GameState::Playing);
+                next_state.set(GameState::Exploring);
             }
             if ui.button("Quit").clicked() {
                 std::process::exit(0);

@@ -29,11 +29,11 @@ pub fn setup_game(
     ));
 
     message_log.add(
-        "Welcome to Myths of Ulan! The game has been refactored.".to_string(),
+        "Welcome to Myths of Ulan!".to_string(),
         Color::LIME_GREEN,
     );
     message_log.add(
-        "A goblin still lurks at (5, 5).".to_string(),
+        "A goblin continues to lurk at (5, 5).".to_string(),
         Color::YELLOW,
     );
 
