@@ -265,10 +265,10 @@ fn player_input_system(
 ) {
     // Movement keys
     if keyboard.just_pressed(KeyCode::KeyW) || keyboard.just_pressed(KeyCode::ArrowUp) {
-        player_commands.send(PlayerCommand::Move { dx: 0, dy: -1 });
+        player_commands.send(PlayerCommand::Move { dx: 0, dy: 1 });
     }
     if keyboard.just_pressed(KeyCode::KeyS) || keyboard.just_pressed(KeyCode::ArrowDown) {
-        player_commands.send(PlayerCommand::Move { dx: 0, dy: 1 });
+        player_commands.send(PlayerCommand::Move { dx: 0, dy: -1 });
     }
     if keyboard.just_pressed(KeyCode::KeyA) || keyboard.just_pressed(KeyCode::ArrowLeft) {
         player_commands.send(PlayerCommand::Move { dx: -1, dy: 0 });
@@ -443,25 +443,33 @@ fn ui_system(
     });
     
     // Message Log
-    egui::TopBottomPanel::bottom("message_log").show(contexts.ctx_mut(), |ui| {
-        ui.label("Message Log:");
-        egui::ScrollArea::vertical()
-            .max_height(150.0)
-            .stick_to_bottom(true)
-            .show(ui, |ui| {
-                // Show messages in chronological order (oldest first)
-                let message_count = message_log.messages.len();
-                let start_index = if message_count > 20 { message_count - 20 } else { 0 };
-                
-                for (message, color) in message_log.messages[start_index..].iter() {
-                    ui.colored_label(egui::Color32::from_rgb(
-                        (color.r() * 255.0) as u8,
-                        (color.g() * 255.0) as u8,
-                        (color.b() * 255.0) as u8,
-                    ), message);
-                }
-            });
-    });
+   egui::TopBottomPanel::bottom("message_log")
+       .resizable(true)
+       .min_height(200.0)
+       .default_height(250.0)
+       .show(contexts.ctx_mut(), |ui| {
+           ui.vertical(|ui| {
+               ui.label("Message Log");
+               ui.separator();
+
+               egui::ScrollArea::vertical()
+                   .auto_shrink([false; 2])
+                   .stick_to_bottom(true)
+                   .show(ui, |ui| {
+                       // Show messages in chronological order (oldest first)
+                       let message_count = message_log.messages.len();
+                       let start_index = if message_count > 50 { message_count - 50 } else { 0 };
+
+                       for (message, color) in message_log.messages[start_index..].iter() {
+                           ui.colored_label(egui::Color32::from_rgb(
+                                   (color.r() * 255.0) as u8,
+                                   (color.g() * 255.0) as u8,
+                                   (color.b() * 255.0) as u8
+                                   ), message);
+                       }
+                   });
+           });
+       });
 }
 
 // Remove the message_log_system - we don't need it updating every frame
