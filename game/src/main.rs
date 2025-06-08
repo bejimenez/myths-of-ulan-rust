@@ -2,6 +2,10 @@ use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts, EguiPlugin};
 use std::collections::HashMap;
 
+// Map display constants
+const MAP_WIDTH: i32 = 35;
+const MAP_HEIGHT: i32 = 25;
+
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(WindowPlugin {
@@ -32,7 +36,7 @@ fn main() {
                 player_input_system,
                 movement_system,
                 combat_system,
-                ui_system,
+                ui_system, // This system is now updated
             )
                 .chain() // Ensures systems run in order
                 .run_if(in_state(GameState::Playing)),
@@ -166,7 +170,7 @@ struct CombatEvent {
 // Functions that operate on entities with specific components
 
 fn setup_game(
-    mut commands: Commands, 
+    mut commands: Commands,
     mut next_state: ResMut<NextState<GameState>>,
     mut message_log: ResMut<MessageLog>,
 ) {
@@ -174,8 +178,15 @@ fn setup_game(
     commands.spawn((
         Player,
         Name("Hero".to_string()),
-        Position { x: 0, y: 0, level: 1 },
-        Health { current: 100, max: 100 },
+        Position {
+            x: 0,
+            y: 0,
+            level: 1,
+        },
+        Health {
+            current: 100,
+            max: 100,
+        },
         Stats {
             strength: 10,
             dexterity: 10,
@@ -200,8 +211,15 @@ fn setup_game(
             ai_type: AIType::Aggressive,
         },
         Name("Goblin".to_string()),
-        Position { x: 5, y: 5, level: 1 },
-        Health { current: 30, max: 30 },
+        Position {
+            x: 5,
+            y: 5,
+            level: 1,
+        },
+        Health {
+            current: 30,
+            max: 30,
+        },
         Stats {
             strength: 6,
             dexterity: 8,
@@ -215,43 +233,40 @@ fn setup_game(
             evasion: 15,
         },
     ));
-    
+
     // Add initial message
     message_log.add(
         "Welcome to Myths of Ulan! Use WASD or arrow keys to move.".to_string(),
-        Color::LIME_GREEN
+        Color::LIME_GREEN,
     );
     message_log.add(
         "A goblin lurks at position (5, 5). Approach carefully!".to_string(),
-        Color::YELLOW
+        Color::YELLOW,
     );
 
     // Start at main menu
     next_state.set(GameState::MainMenu);
 }
 
-fn main_menu_system(
-    mut contexts: EguiContexts,
-    mut next_state: ResMut<NextState<GameState>>,
-) {
+fn main_menu_system(mut contexts: EguiContexts, mut next_state: ResMut<NextState<GameState>>) {
     egui::CentralPanel::default().show(contexts.ctx_mut(), |ui| {
         ui.vertical_centered(|ui| {
             ui.add_space(100.0);
-            
+
             ui.heading("MYTHS OF ULAN");
             ui.add_space(20.0);
             ui.label("A Retro Fantasy RPG");
-            
+
             ui.add_space(50.0);
-            
+
             if ui.button("New Game").clicked() {
                 next_state.set(GameState::Playing);
             }
-            
+
             if ui.button("Load Game").clicked() {
                 // TODO: Implement load game
             }
-            
+
             if ui.button("Quit").clicked() {
                 std::process::exit(0);
             }
@@ -276,7 +291,7 @@ fn player_input_system(
     if keyboard.just_pressed(KeyCode::KeyD) || keyboard.just_pressed(KeyCode::ArrowRight) {
         player_commands.send(PlayerCommand::Move { dx: 1, dy: 0 });
     }
-    
+
     // Wait/Skip turn
     if keyboard.just_pressed(KeyCode::Space) {
         player_commands.send(PlayerCommand::Wait);
@@ -295,20 +310,25 @@ fn movement_system(
     for command in player_commands.read() {
         match command {
             PlayerCommand::Move { dx, dy } => {
-                if let Ok((mut player_pos, player_entity, player_name)) = player_query.get_single_mut() {
+                if let Ok((mut player_pos, player_entity, _player_name)) =
+                    player_query.get_single_mut()
+                {
                     let new_x = player_pos.x + dx;
                     let new_y = player_pos.y + dy;
-                    
+
                     // Check for collision with monsters
                     let mut blocked = false;
                     for (monster_pos, monster_entity, monster_name) in monster_query.iter() {
-                        if monster_pos.x == new_x && monster_pos.y == new_y && monster_pos.level == player_pos.level {
+                        if monster_pos.x == new_x
+                            && monster_pos.y == new_y
+                            && monster_pos.level == player_pos.level
+                        {
                             // Monster encountered!
                             message_log.add(
-                                format!("You encounter a {}!", monster_name.0), 
-                                Color::YELLOW
+                                format!("You bump into the {}!", monster_name.0),
+                                Color::YELLOW,
                             );
-                            
+
                             // Initiate combat instead of moving
                             combat_events.send(CombatEvent {
                                 attacker: player_entity,
@@ -319,44 +339,26 @@ fn movement_system(
                             break;
                         }
                     }
-                    
+
                     // TODO: Check for wall collisions when we have dungeon generation
-                    
+
                     // Move if not blocked
                     if !blocked {
                         player_pos.x = new_x;
                         player_pos.y = new_y;
-                        
+
                         // Only increment turn count on successful actions
                         game_world.turn_count += 1;
-                        
-                        // Add movement message with turn count
-                        message_log.add(
-                            format!("Turn {}: You move to ({}, {})", game_world.turn_count, new_x, new_y), 
-                            Color::WHITE
-                        );
-                        
-                        // Check if any monsters are adjacent after moving
-                        for (monster_pos, _, monster_name) in monster_query.iter() {
-                            let dx = (monster_pos.x - new_x).abs();
-                            let dy = (monster_pos.y - new_y).abs();
-                            if monster_pos.level == player_pos.level && dx <= 1 && dy <= 1 {
-                                message_log.add(
-                                    format!("You see a {} nearby!", monster_name.0),
-                                    Color::ORANGE_RED
-                                );
-                            }
-                        }
                     }
                 }
-            },
+            }
             PlayerCommand::Wait => {
                 game_world.turn_count += 1;
                 message_log.add(
                     format!("Turn {}: You wait.", game_world.turn_count),
-                    Color::GRAY
+                    Color::GRAY,
                 );
-            },
+            }
             _ => {} // Handle other commands as needed
         }
     }
@@ -377,39 +379,45 @@ fn combat_system(
                 // Simple combat calculation
                 let hit_chance = attacker_stats.accuracy - defender_stats.evasion;
                 let hit_roll = rand::random::<i32>() % 100;
-                
+
                 if hit_roll < hit_chance {
                     // Calculate damage
                     let damage = (attacker_stats.damage - defender_stats.defense).max(1);
-                    
+
                     // Apply damage
                     if let Ok(mut defender_health) = health_query.get_mut(event.defender) {
                         defender_health.current -= damage;
-                        
+
                         // Get names for message
-                        let attacker_name = name_query.get(event.attacker)
+                        let attacker_name = name_query
+                            .get(event.attacker)
                             .map(|n| n.0.clone())
                             .unwrap_or("Unknown".to_string());
-                        let defender_name = name_query.get(event.defender)
+                        let defender_name = name_query
+                            .get(event.defender)
                             .map(|n| n.0.clone())
                             .unwrap_or("Unknown".to_string());
-                        
+
                         message_log.add(
-                            format!("{} hits {} for {} damage!", attacker_name, defender_name, damage),
-                            Color::RED
+                            format!(
+                                "{} hits {} for {} damage!",
+                                attacker_name, defender_name, damage
+                            ),
+                            Color::RED,
                         );
-                        
+
                         // Check for death
                         if defender_health.current <= 0 {
                             message_log.add(
                                 format!("{} has been slain!", defender_name),
-                                Color::DARK_GRAY
+                                Color::DARK_GRAY,
                             );
                             commands.entity(event.defender).despawn();
                         }
                     }
                 } else {
-                    let attacker_name = name_query.get(event.attacker)
+                    let attacker_name = name_query
+                        .get(event.attacker)
                         .map(|n| n.0.clone())
                         .unwrap_or("Unknown".to_string());
                     message_log.add(format!("{} misses!", attacker_name), Color::GRAY);
@@ -419,13 +427,18 @@ fn combat_system(
     }
 }
 
+
+// MODIFIED SYSTEM
 fn ui_system(
     mut contexts: EguiContexts,
+    // We now need two queries: one just for the player's position to center the map,
+    // and another for all drawable entities on the map.
     player_query: Query<(&Health, &Stats, &Position), With<Player>>,
+    entities_query: Query<(&Position, Option<&Player>, Option<&Monster>)>,
     game_world: Res<GameWorld>,
     message_log: Res<MessageLog>,
 ) {
-    // Stats Panel
+    // --- Top Stats Panel (Unchanged) ---
     egui::TopBottomPanel::top("stats_panel").show(contexts.ctx_mut(), |ui| {
         if let Ok((health, stats, position)) = player_query.get_single() {
             ui.horizontal(|ui| {
@@ -441,35 +454,92 @@ fn ui_system(
             });
         }
     });
-    
-    // Message Log
-   egui::TopBottomPanel::bottom("message_log")
-       .resizable(true)
-       .min_height(200.0)
-       .default_height(250.0)
-       .show(contexts.ctx_mut(), |ui| {
-           ui.vertical(|ui| {
-               ui.label("Message Log");
-               ui.separator();
 
-               egui::ScrollArea::vertical()
-                   .auto_shrink([false; 2])
-                   .stick_to_bottom(true)
-                   .show(ui, |ui| {
-                       // Show messages in chronological order (oldest first)
-                       let message_count = message_log.messages.len();
-                       let start_index = if message_count > 50 { message_count - 50 } else { 0 };
+    // --- Bottom Message Log (Unchanged) ---
+    egui::TopBottomPanel::bottom("message_log")
+        .resizable(true)
+        .min_height(200.0)
+        .default_height(250.0)
+        .show(contexts.ctx_mut(), |ui| {
+            ui.vertical(|ui| {
+                ui.label("Message Log");
+                ui.separator();
 
-                       for (message, color) in message_log.messages[start_index..].iter() {
-                           ui.colored_label(egui::Color32::from_rgb(
-                                   (color.r() * 255.0) as u8,
-                                   (color.g() * 255.0) as u8,
-                                   (color.b() * 255.0) as u8
-                                   ), message);
-                       }
-                   });
-           });
-       });
+                egui::ScrollArea::vertical()
+                    .auto_shrink([false; 2])
+                    .stick_to_bottom(true)
+                    .show(ui, |ui| {
+                        let message_count = message_log.messages.len();
+                        let start_index = if message_count > 50 { message_count - 50 } else { 0 };
+
+                        for (message, color) in message_log.messages[start_index..].iter() {
+                            ui.colored_label(
+                                egui::Color32::from_rgb(
+                                    (color.r() * 255.0) as u8,
+                                    (color.g() * 255.0) as u8,
+                                    (color.b() * 255.0) as u8,
+                                ),
+                                message,
+                            );
+                        }
+                    });
+            });
+        });
+
+    // --- NEW: Central Map Panel ---
+    egui::CentralPanel::default().show(contexts.ctx_mut(), |ui| {
+        // We need the player's position to center the map. If the player doesn't exist,
+        // we can't draw the map.
+        if let Ok((_, _, player_pos)) = player_query.get_single() {
+            // Use a HashMap to store the characters for our entities. This is more
+            // efficient than a full 2D array if the map is sparse.
+            // The key is the (x, y) world coordinate, and the value is the character to draw.
+            let mut map_chars: HashMap<(i32, i32), char> = HashMap::new();
+
+            // Populate the map with entities.
+            for (pos, is_player, is_monster) in entities_query.iter() {
+                // Only draw entities on the same dungeon level as the player.
+                if pos.level == player_pos.level {
+                    let char = if is_player.is_some() {
+                        '@' // Player
+                    } else if is_monster.is_some() {
+                        'g' // Goblin
+                    } else {
+                        '?' // Unknown entity
+                    };
+                    map_chars.insert((pos.x, pos.y), char);
+                }
+            }
+
+            // Center the map content.
+            ui.vertical_centered(|ui| {
+                ui.label(format!("-- Dungeon Level {} --", player_pos.level));
+                ui.add_space(10.0);
+
+                // Use a fixed-width font for proper alignment. This is CRITICAL.
+                let font = egui::FontId::monospace(14.0);
+                
+                // Draw the map grid.
+                for y in 0..MAP_HEIGHT {
+                    let mut row_string = String::new();
+                    for x in 0..MAP_WIDTH {
+                        // Calculate the world coordinates for this screen cell.
+                        // The center of our view (MAP_WIDTH/2, MAP_HEIGHT/2) corresponds
+                        // to the player's current position.
+                        // Y is inverted because in games, positive Y is usually "up",
+                        // but in UI, positive Y is "down".
+                        let world_x = player_pos.x + x - MAP_WIDTH / 2;
+                        let world_y = player_pos.y - (y - MAP_HEIGHT / 2);
+
+                        // Get the character from our map, or a floor tile '.' if nothing is there.
+                        let char_to_draw = map_chars.get(&(world_x, world_y)).unwrap_or(&'.');
+                        row_string.push(*char_to_draw);
+                        row_string.push(' '); // Add a space for better readability
+                    }
+                    // Display the completed row.
+                    ui.label(egui::RichText::new(row_string).font(font.clone()));
+                }
+            });
+        }
+    });
 }
-
-// Remove the message_log_system - we don't need it updating every frame
