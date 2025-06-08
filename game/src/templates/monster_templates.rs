@@ -1,45 +1,45 @@
-// src/templates/monster_templates.rs   
+// src/templates/monster_templates.rs
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::components::{AIType, CombatStats, Health, Stats};
+use crate::components::{AIType, CombatStats, Health, Stats, Monster, Name, Position};
 
-// A template that defines the base properties for a type of monster    
+/// A template that defines the base properties for a type of monster
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MonsterTemplate {
-    // Unique identifier for this monster type
+    /// Unique identifier for this monster type
     pub id: String,
-
-    // Display name 
+    
+    /// Display name for the monster
     pub name: String,
-
-    // Base health values
+    
+    /// Base health values
     pub health: HealthTemplate,
-
-    // Base stat values
+    
+    /// Base stat values
     pub stats: StatsTemplate,
-
-    // Combat related stats
+    
+    /// Combat-related stats
     pub combat: CombatStatsTemplate,
-
-    // AI behavior type
+    
+    /// AI behavior type
     pub ai_type: AIType,
-
-    // Level range where this monster can spawn
+    
+    /// Level range where this monster can spawn
     pub level_range: (i32, i32),
-
-    // Base experience reward
+    
+    /// Base experience reward
     pub experience_reward: u32,
-
-    // Loot table reference (future implementation)
+    
+    /// Loot table reference (for future implementation)
     pub loot_table_id: Option<String>,
-
-    // Visual representaion
+    
+    /// Visual representation
     pub display_char: char,
     pub display_color: Color,
 }
 
-#[derive(Debug, Clone, Serialize Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HealthTemplate {
     pub base_health: i32,
     pub health_per_level: i32,
@@ -51,8 +51,8 @@ pub struct StatsTemplate {
     pub base_dexterity: i32,
     pub base_intelligence: i32,
     pub base_constitution: i32,
-
-    // Stats gain per level 
+    
+    // Stats gain per level
     pub strength_per_level: f32,
     pub dexterity_per_level: f32,
     pub intelligence_per_level: f32,
@@ -65,13 +65,13 @@ pub struct CombatStatsTemplate {
     pub base_defense: i32,
     pub base_accuracy: i32,
     pub base_evasion: i32,
-
+    
     // Combat stats scaling
     pub damage_per_level: f32,
     pub defense_per_level: f32,
 }
 
-// Resource that holds all the monster templates
+/// Resource that holds all monster templates
 #[derive(Resource, Default)]
 pub struct MonsterTemplateRegistry {
     templates: HashMap<String, MonsterTemplate>,
@@ -82,22 +82,22 @@ impl MonsterTemplateRegistry {
         let mut registry = Self {
             templates: HashMap::new(),
         };
-
+        
         // Register default templates
         registry.register_default_templates();
         registry
     }
-
+    
     pub fn register(&mut self, template: MonsterTemplate) {
         self.templates.insert(template.id.clone(), template);
     }
-
+    
     pub fn get(&self, id: &str) -> Option<&MonsterTemplate> {
         self.templates.get(id)
     }
-
+    
     fn register_default_templates(&mut self) {
-        // Basic goblin
+        // Basic Goblin
         self.register(MonsterTemplate {
             id: "goblin".to_string(),
             name: "Goblin".to_string(),
@@ -130,8 +130,8 @@ impl MonsterTemplateRegistry {
             display_char: 'g',
             display_color: Color::rgb(0.0, 0.7, 0.0),
         });
-
-        // Raging Goblin - enhanced version 
+        
+        // Raging Goblin - Enhanced variant
         self.register(MonsterTemplate {
             id: "raging_goblin".to_string(),
             name: "Raging Goblin".to_string(),
@@ -167,8 +167,7 @@ impl MonsterTemplateRegistry {
     }
 }
 
-// System for spawning monsters from templates
-
+/// System for spawning monsters from templates
 pub fn spawn_monster_from_template(
     commands: &mut Commands,
     registry: &MonsterTemplateRegistry,
@@ -177,22 +176,22 @@ pub fn spawn_monster_from_template(
     level: Option<i32>,
 ) -> Option<Entity> {
     let template = registry.get(template_id)?;
-
+    
     // Calculate the monster's level
     let monster_level = level.unwrap_or_else(|| {
         if template.level_range.0 == template.level_range.1 {
             template.level_range.0
         } else {
-            rand::random::<i32>() % (template.level_range.1 - template.level_range.0 + 1) + template.level_range.0
+            rand::random::<i32>().abs() % (template.level_range.1 - template.level_range.0 + 1) + template.level_range.0
         }
     });
-
+    
     // Calculate scaled stats
     let health = Health {
-        current: template.health.base_health + (template.health.health_per_level * (monster_level -1)),
-        max: template.health.base_health + (template.health.health_per_level * (monster_level -1)),
+        current: template.health.base_health + (template.health.health_per_level * (monster_level - 1)),
+        max: template.health.base_health + (template.health.health_per_level * (monster_level - 1)),
     };
-
+    
     let stats = Stats {
         strength: template.stats.base_strength + ((template.stats.strength_per_level * (monster_level - 1) as f32) as i32),
         dexterity: template.stats.base_dexterity + ((template.stats.dexterity_per_level * (monster_level - 1) as f32) as i32),
@@ -221,7 +220,7 @@ pub fn spawn_monster_from_template(
     Some(entity)
 }
 
-// Component that references which template a monster was created from
+/// Component that references which template a monster was created from
 #[derive(Component)]
 pub struct MonsterTemplateRef(pub String);
 
@@ -234,5 +233,4 @@ impl MonsterTemplateRegistry {
         }
         Ok(())
     }
-}
 }

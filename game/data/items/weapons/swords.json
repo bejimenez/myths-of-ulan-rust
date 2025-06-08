@@ -1,0 +1,83 @@
+[
+  {
+    "type": "Weapon",
+    "id": "rusty_sword",
+    "name": "Rusty Sword",
+    "description": "A worn blade that has seen better days",
+    "weapon_type": "Sword",
+    "damage": {
+      "min": 2,
+      "max": 5,
+      "damage_type": "Physical"
+    },
+    "attack_speed": 1.0,
+    "requirements": {
+      "level": 1,
+      "strength": 5
+    },
+    "modifiers": [],
+    "rarity": "Common",
+    "value": 10,
+    "stack_size": 1
+  },
+  {
+    "type": "Weapon",
+    "id": "iron_sword",
+    "name": "Iron Sword",
+    "description": "A sturdy blade forged from iron",
+    "weapon_type": "Sword",
+    "damage": {
+      "min": 5,
+      "max": 10,
+      "damage_type": "Physical"
+    },
+    "attack_speed": 1.0,
+    "requirements": {
+      "level": 5,
+      "strength": 10
+    },
+    "modifiers": [
+      {
+        "stat": "accuracy",
+        "modifier_type": "Flat",
+        "value": 5
+      }
+    ],
+    "rarity": "Common",
+    "value": 50,
+    "stack_size": 1
+  },
+  {
+    "type": "Weapon",
+    "id": "flamebrand",
+    "name": "Flamebrand",
+    "description": "A sword imbued with elemental fire",
+    "weapon_type": "Sword",
+    "damage": {
+      "min": 8,
+      "max": 15,
+      "damage_type": "Fire"
+    },
+    "attack_speed": 0.9,
+    "requirements": {
+      "level": 10,
+      "strength": 12,
+      "intelligence": 8
+    },
+    "modifiers": [
+      {
+        "stat": "fire_damage",
+        "modifier_type": "Percentage",
+        "value": 20
+      },
+      {
+        "stat": "critical_chance",
+        "modifier_type": "Flat",
+        "value": 5
+      }
+    ],
+    "rarity": "Rare",
+    "value": 500,
+    "stack_size": 1
+  }
+]

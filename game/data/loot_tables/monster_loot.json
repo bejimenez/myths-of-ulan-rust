@@ -1,0 +1,111 @@
+[
+  {
+    "id": "goblin_warrior_loot",
+    "name": "Goblin Warrior Loot",
+    "rolls": {
+      "min": 1,
+      "max": 2,
+      "bonus_rolls": {
+        "per_level": 0.1,
+        "per_luck": 0.2
+      }
+    },
+    "entries": [
+      {
+        "weight": 10.0,
+        "item": {
+          "type": "Gold",
+          "amount": {
+            "min": 5,
+            "max": 15
+          }
+        },
+        "conditions": []
+      },
+      {
+        "weight": 5.0,
+        "item": {
+          "type": "Item",
+          "id": "health_potion_small",
+          "quantity": {
+            "min": 1,
+            "max": 2
+          }
+        },
+        "conditions": []
+      },
+      {
+        "weight": 3.0,
+        "item": {
+          "type": "Item",
+          "id": "rusty_sword",
+          "quantity": {
+            "min": 1,
+            "max": 1
+          }
+        },
+        "conditions": [
+          {
+            "type": "Random",
+            "chance": 0.5
+          }
+        ]
+      },
+      {
+        "weight": 1.0,
+        "item": {
+          "type": "Table",
+          "id": "rare_goblin_loot"
+        },
+        "conditions": [
+          {
+            "type": "MinLevel",
+            "level": 5
+          }
+        ]
+      },
+      {
+        "weight": 20.0,
+        "item": {
+          "type": "Nothing"
+        },
+        "conditions": []
+      }
+    ]
+  },
+  {
+    "id": "rare_goblin_loot",
+    "name": "Rare Goblin Loot",
+    "rolls": {
+      "min": 1,
+      "max": 1,
+      "bonus_rolls": null
+    },
+    "entries": [
+      {
+        "weight": 5.0,
+        "item": {
+          "type": "Item",
+          "id": "goblin_totem",
+          "quantity": {
+            "min": 1,
+            "max": 1
+          }
+        },
+        "conditions": []
+      },
+      {
+        "weight": 3.0,
+        "item": {
+          "type": "Item",
+          "id": "strength_elixir",
+          "quantity": {
+            "min": 1,
+            "max": 1
+          }
+        },
+        "conditions": []
+      }
+    ]
+  }
+]

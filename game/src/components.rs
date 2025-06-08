@@ -1,6 +1,5 @@
 // src/components.rs
 use bevy::prelude::*;
-use crate::components::Position;
 
 #[derive(Component)]
 pub struct Player;
@@ -13,7 +12,7 @@ pub struct Monster {
 #[derive(Component)]
 pub struct Name(pub String);
 
-#[derive(Component)]
+#[derive(Component, Clone)]
 pub struct Position {
     pub x: i32,
     pub y: i32,

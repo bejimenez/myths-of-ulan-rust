@@ -7,6 +7,7 @@ mod game_state;
 mod plugins;
 mod resources;
 mod setup;
+mod templates; // Add this line
 
 use game_state::GameState;
 use plugins::GamePlugin;
@@ -18,7 +19,7 @@ fn main() {
         // Add Bevy's default plugins and Egui
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
-                title: "Myths of Ulan (Refactored)".to_string(),
+                title: "Myths of Ulan".to_string(),
                 mode: bevy::window::WindowMode::BorderlessFullscreen,
                 ..default()
             }),

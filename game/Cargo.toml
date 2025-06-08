@@ -1,13 +1,28 @@
 [package]
 name = "game"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 
 [dependencies]
-bevy = "0.13"
+# Minimal Bevy setup
+bevy = { version = "0.13", default-features = false, features = [
+    "bevy_asset",
+    "bevy_winit",
+    "bevy_render",
+    "bevy_sprite",
+    "bevy_text",
+    "bevy_ui",
+    "png",
+    "x11",  # For Linux/X11
+] }
+
+# Compatible bevy_egui
 bevy_egui = "0.25"
+
+# Other dependencies
 rand = "0.8"
-serde = { version = "1.0", features = ["derive"]}
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 
 # future features
 petgraph = "0.6"

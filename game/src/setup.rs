@@ -10,10 +10,9 @@ pub fn setup_game(
     mut next_state: ResMut<NextState<GameState>>,
     mut message_log: ResMut<MessageLog>,
 ) {
-    // Initialize the monster template MonsterTemplateRegistry
-    let monster_registry = MonsterTemplateRegistry::new();
-    commands.insert_resource(monster_registry);
-
+    // Initialize and insert the monster template registry
+    let registry = MonsterTemplateRegistry::new();
+    
     // Spawn the player
     commands.spawn((
         Player,
@@ -24,11 +23,8 @@ pub fn setup_game(
         CombatStats { damage: 5, defense: 2, accuracy: 85, evasion: 10 },
         Inventory { items: Vec::new(), capacity: 20 },
     ));
-    
-    // Access the registry we just created 
-    let registry = commands.get_resource::<MonsterTemplateRegistry>().unwrap();
 
-    // Spawn a Raging Goblin using the template spawn_monster_from_template
+    // Spawn a Raging Goblin using the template system
     spawn_monster_from_template(
         &mut commands,
         &registry,
@@ -36,24 +32,27 @@ pub fn setup_game(
         Position { x: 5, y: 5, level: 1 },
         Some(4), // Spawn at level 4
     );
-
-    // Spawn a regular goblin at a random level within its range 
+    
+    // Spawn a regular goblin at a random level within its range
     spawn_monster_from_template(
         &mut commands,
         &registry,
         "goblin",
         Position { x: -3, y: 2, level: 1 },
-        None, //let the system choose a random level
+        None, // Let the system choose a random level
     );
 
+    // Insert the registry as a resource AFTER using it
+    commands.insert_resource(registry);
+
     message_log.add(
-        "Welcom to Myths of Ulan! The template system is now active.".to_string(),
+        "Welcome to Myths of Ulan! The template system is now active.".to_string(),
         Color::LIME_GREEN,
-        );
+    );
     message_log.add(
-        "A Raging Goblin lurks at (5,5) and a regular Goblin at (-3, 2).".to_string(),
+        "A Raging Goblin lurks at (5, 5) and a regular Goblin at (-3, 2).".to_string(),
         Color::YELLOW,
-        );
+    );
 
     next_state.set(GameState::MainMenu);
 }

@@ -1,0 +1,58 @@
+[
+  {
+    "type": "Consumable",
+    "id": "health_potion_small",
+    "name": "Minor Health Potion",
+    "description": "Restores a small amount of health",
+    "consumable_type": "Potion",
+    "effects": [
+      {
+        "Heal": {
+          "amount": 25
+        }
+      }
+    ],
+    "charges": 1,
+    "cooldown": 0.0,
+    "value": 10,
+    "stack_size": 20
+  },
+  {
+    "type": "Consumable",
+    "id": "mana_potion_small",
+    "name": "Minor Mana Potion",
+    "description": "Restores a small amount of mana",
+    "consumable_type": "Potion",
+    "effects": [
+      {
+        "RestoreMana": {
+          "amount": 20
+        }
+      }
+    ],
+    "charges": 1,
+    "cooldown": 0.0,
+    "value": 10,
+    "stack_size": 20
+  },
+  {
+    "type": "Consumable",
+    "id": "strength_elixir",
+    "name": "Elixir of Strength",
+    "description": "Temporarily increases your strength",
+    "consumable_type": "Elixir",
+    "effects": [
+      {
+        "Buff": {
+          "stat": "strength",
+          "amount": 5,
+          "duration": 300.0
+        }
+      }
+    ],
+    "charges": 1,
+    "cooldown": 60.0,
+    "value": 50,
+    "stack_size": 10
+  }
+]

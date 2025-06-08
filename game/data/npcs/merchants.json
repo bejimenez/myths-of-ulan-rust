@@ -1,0 +1,50 @@
+[
+  {
+    "id": "general_merchant",
+    "name": "Marcus",
+    "title": "General Goods Merchant",
+    "description": "A friendly merchant who sells various supplies",
+    "npc_type": "Merchant",
+    "dialogue_personality": {
+      "tone": "friendly",
+      "speaking_style": "casual",
+      "interests": ["trade", "local gossip", "weather"],
+      "knowledge_areas": ["local area", "trade routes", "basic items"],
+      "personality_traits": ["helpful", "talkative", "honest"]
+    },
+    "services": [
+      {
+        "Shop": {
+          "inventory_table": "general_merchant_stock"
+        }
+      }
+    ],
+    "faction": "merchants_guild",
+    "importance": "Normal",
+    "spawn_locations": ["town_square", "market_district"]
+  },
+  {
+    "id": "weapon_smith",
+    "name": "Thorin",
+    "title": "Master Weaponsmith",
+    "description": "A gruff dwarf who crafts and sells weapons",
+    "npc_type": "Merchant",
+    "dialogue_personality": {
+      "tone": "gruff",
+      "speaking_style": "direct",
+      "interests": ["smithing", "weapon quality", "ore types"],
+      "knowledge_areas": ["weapons", "smithing", "combat techniques"],
+      "personality_traits": ["proud", "perfectionist", "impatient"]
+    },
+    "services": [
+      {
+        "Shop": {
+          "inventory_table": "weapon_smith_stock"
+        }
+      }
+    ],
+    "faction": "blacksmiths_guild",
+    "importance": "High",
+    "spawn_locations": ["smithy", "dwarven_quarter"]
+  }
+]
