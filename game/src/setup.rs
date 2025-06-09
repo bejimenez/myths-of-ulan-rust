@@ -1,18 +1,19 @@
-// src/setup.rs
+// src/setup.rs - Updated to use the data system
 use bevy::prelude::*;
 use crate::components::*;
+use crate::data::GameData;
+use crate::data::templates::spawn_monster_from_template;
 use crate::game_state::GameState;
 use crate::resources::MessageLog;
-use crate::templates::monster_templates::{MonsterTemplateRegistry, spawn_monster_from_template};
+use crate::systems::DropLootEvent;
 
 pub fn setup_game(
     mut commands: Commands,
     mut next_state: ResMut<NextState<GameState>>,
     mut message_log: ResMut<MessageLog>,
+    game_data: Res<GameData>, // Now we can access loaded data
+    mut loot_events: EventWriter<DropLootEvent>,
 ) {
-    // Initialize and insert the monster template registry
-    let registry = MonsterTemplateRegistry::new();
-    
     // Spawn the player
     commands.spawn((
         Player,
@@ -24,34 +25,35 @@ pub fn setup_game(
         Inventory { items: Vec::new(), capacity: 20 },
     ));
 
-    // Spawn a Raging Goblin using the template system
-    spawn_monster_from_template(
+    // Spawn monsters using the loaded templates
+    if let Some(entity) = spawn_monster_from_template(
         &mut commands,
-        &registry,
-        "raging_goblin",
+        &game_data.monsters,
+        "goblin_warrior",
         Position { x: 5, y: 5, level: 1 },
-        Some(4), // Spawn at level 4
-    );
+        Some(3),
+    ) {
+        message_log.add(
+            "A Goblin Warrior appears!".to_string(),
+            Color::YELLOW,
+        );
+    }
     
-    // Spawn a regular goblin at a random level within its range
-    spawn_monster_from_template(
-        &mut commands,
-        &registry,
-        "goblin",
-        Position { x: -3, y: 2, level: 1 },
-        None, // Let the system choose a random level
-    );
-
-    // Insert the registry as a resource AFTER using it
-    commands.insert_resource(registry);
+    // Spawn some loot on the ground
+    loot_events.send(DropLootEvent {
+        loot_table_id: "goblin_warrior_loot".to_string(),
+        position: Position { x: 2, y: 2, level: 1 },
+        level: 5,
+        luck: 1.0,
+    });
 
     message_log.add(
-        "Welcome to Myths of Ulan! The template system is now active.".to_string(),
+        format!("Game data loaded: {} monsters, {} items, {} NPCs available", 
+            game_data.monsters.count(),
+            game_data.items.count(),
+            game_data.npcs.count()
+        ),
         Color::LIME_GREEN,
-    );
-    message_log.add(
-        "A Raging Goblin lurks at (5, 5) and a regular Goblin at (-3, 2).".to_string(),
-        Color::YELLOW,
     );
 
     next_state.set(GameState::MainMenu);
