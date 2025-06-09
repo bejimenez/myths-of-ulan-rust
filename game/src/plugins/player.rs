@@ -1,9 +1,10 @@
-// src/plugins/player.rs
+// src/plugins/player.rs - FIXED FOR MULTIPLE MONSTERS
 
 use bevy::prelude::*;
-use crate::components::{Monster, Player, Position}; // Removed unused `Name` import
+use crate::components::{Monster, Player, Position, Name};
 use crate::game_state::GameState;
 use crate::resources::MessageLog;
+use super::combat::StartCombatEvent;
 
 pub struct PlayerPlugin;
 
@@ -47,16 +48,13 @@ fn player_input_system(
     }
 }
 
-// System with corrected Query parameters
 fn movement_system(
     mut move_events: EventReader<PlayerMoveEvent>,
-    // --- FIX IS HERE ---
-    // We group multiple filters in a tuple and add `Without`.
     mut player_query: Query<&mut Position, (With<Player>, Without<Monster>)>,
-    monster_query: Query<&Position, (With<Monster>, Without<Player>)>,
-    // --- END FIX ---
+    monster_query: Query<(Entity, &Position, &Name), (With<Monster>, Without<Player>)>,
     mut message_log: ResMut<MessageLog>,
     mut next_state: ResMut<NextState<GameState>>,
+    mut combat_events: EventWriter<StartCombatEvent>,
 ) {
     for event in move_events.read() {
         if let Ok(mut player_pos) = player_query.get_single_mut() {
@@ -64,12 +62,21 @@ fn movement_system(
             let new_y = player_pos.y + event.dy;
             let mut blocked = false;
 
-            for monster_pos in monster_query.iter() {
-                if monster_pos.x == new_x && monster_pos.y == new_y && monster_pos.level == player_pos.level {
+            // Check all monsters for collision
+            for (monster_entity, monster_pos, monster_name) in monster_query.iter() {
+                if monster_pos.x == new_x && 
+                   monster_pos.y == new_y && 
+                   monster_pos.level == player_pos.level {
                     message_log.add(
-                        "You encounter a goblin! Press 'A' to attack.".to_string(),
+                        format!("You encounter {}! Press 'A' to attack.", monster_name.0),
                         Color::ORANGE_RED,
                     );
+                    
+                    // Send combat event with the specific monster
+                    combat_events.send(StartCombatEvent {
+                        monster: monster_entity,
+                    });
+                    
                     next_state.set(GameState::InCombat);
                     blocked = true;
                     break;

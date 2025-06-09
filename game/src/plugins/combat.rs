@@ -1,7 +1,7 @@
-// src/plugins/combat.rs
+// src/plugins/combat.rs - FIXED FOR MULTIPLE MONSTERS
 
 use bevy::prelude::*;
-use crate::components::{CombatStats, Health, Name, Player, Monster};
+use crate::components::{CombatStats, Health, Name, Player, Monster, Position};
 use crate::game_state::GameState;
 use crate::resources::{MessageLog, TurnState};
 
@@ -11,20 +11,20 @@ impl Plugin for CombatPlugin {
     fn build(&self, app: &mut App) {
         app
             .add_event::<AttackEvent>()
+            .add_event::<StartCombatEvent>()
+            .init_resource::<CurrentCombat>()
             .add_systems(OnEnter(GameState::InCombat), setup_combat)
             .add_systems(OnExit(GameState::InCombat), teardown_combat)
             .add_systems(
                 Update,
                 (
+                    handle_combat_start,
                     combat_input_system,
                     process_attacks,
+                    monster_ai_system,
                     check_combat_end,
-                    // The monster AI system should also be ordered correctly
-                    // We can apply it here to make the turn order explicit.
-                    super::monster::monster_ai_system.after(process_attacks),
                 )
-                // FIX: Remove the .chain() call. The logic within each system
-                // and the event-driven nature handles the ordering correctly.
+                .chain()
                 .run_if(in_state(GameState::InCombat))
             );
     }
@@ -36,13 +36,42 @@ pub struct AttackEvent {
     pub defender: Entity,
 }
 
-fn setup_combat(mut commands: Commands) {
-    commands.insert_resource(TurnState::PlayerTurn);
-    // You could also add a message log entry here if you want.
+#[derive(Event)]
+pub struct StartCombatEvent {
+    pub monster: Entity,
 }
 
-fn teardown_combat(mut commands: Commands) {
+#[derive(Resource, Default)]
+pub struct CurrentCombat {
+    pub monster_entity: Option<Entity>,
+}
+
+fn setup_combat(
+    mut commands: Commands, 
+    mut message_log: ResMut<MessageLog>,
+) {
+    commands.insert_resource(TurnState::PlayerTurn);
+    message_log.add(
+        "Combat begins! Press 'A' to attack.".to_string(),
+        Color::ORANGE_RED,
+    );
+}
+
+fn teardown_combat(
+    mut commands: Commands,
+    mut current_combat: ResMut<CurrentCombat>,
+) {
     commands.remove_resource::<TurnState>();
+    current_combat.monster_entity = None;
+}
+
+fn handle_combat_start(
+    mut events: EventReader<StartCombatEvent>,
+    mut current_combat: ResMut<CurrentCombat>,
+) {
+    for event in events.read() {
+        current_combat.monster_entity = Some(event.monster);
+    }
 }
 
 fn combat_input_system(
@@ -50,19 +79,28 @@ fn combat_input_system(
     turn_state: Res<TurnState>,
     mut attack_events: EventWriter<AttackEvent>,
     player_query: Query<Entity, With<Player>>,
-    monster_query: Query<Entity, With<Monster>>,
+    current_combat: Res<CurrentCombat>,
+    mut message_log: ResMut<MessageLog>,
 ) {
     if *turn_state != TurnState::PlayerTurn {
         return;
     }
 
     if keyboard.just_pressed(KeyCode::KeyA) {
-        if let (Ok(player_entity), Ok(monster_entity)) = (player_query.get_single(), monster_query.get_single()) {
-            attack_events.send(AttackEvent {
-                attacker: player_entity,
-                defender: monster_entity,
-            });
-        }
+        let Ok(player_entity) = player_query.get_single() else {
+            message_log.add("No player found!".to_string(), Color::RED);
+            return;
+        };
+        
+        let Some(monster_entity) = current_combat.monster_entity else {
+            message_log.add("No monster in combat!".to_string(), Color::RED);
+            return;
+        };
+        
+        attack_events.send(AttackEvent {
+            attacker: player_entity,
+            defender: monster_entity,
+        });
     }
 }
 
@@ -71,13 +109,13 @@ fn process_attacks(
     mut attack_events: EventReader<AttackEvent>,
     mut combatants: Query<(&mut Health, &CombatStats, &Name)>,
     mut message_log: ResMut<MessageLog>,
-    // FIX: Change from NextState<TurnState> to a direct mutable resource
     mut turn_state: ResMut<TurnState>,
 ) {
-    // Only process one attack per frame to ensure turn-based flow
-    if let Some(event) = attack_events.read().next() {
+    for event in attack_events.read() {
         let Ok([(mut _attacker_health, attacker_stats, attacker_name), (mut defender_health, defender_stats, defender_name)]) =
-            combatants.get_many_mut([event.attacker, event.defender]) else { return };
+            combatants.get_many_mut([event.attacker, event.defender]) else { 
+                continue;
+            };
 
         let hit_chance = attacker_stats.accuracy - defender_stats.evasion;
         let hit_roll = rand::random::<i32>() % 100;
@@ -99,11 +137,13 @@ fn process_attacks(
                 commands.entity(event.defender).despawn();
             }
         } else {
-            message_log.add(format!("{} misses {}!", attacker_name.0, defender_name.0), Color::GRAY);
+            message_log.add(
+                format!("{} misses {}!", attacker_name.0, defender_name.0),
+                Color::GRAY
+            );
         }
 
-        // --- FIX: Switch turns using direct assignment ---
-        // This is what makes the combat turn-based.
+        // Switch turns
         match *turn_state {
             TurnState::PlayerTurn => *turn_state = TurnState::MonsterTurn,
             TurnState::MonsterTurn => *turn_state = TurnState::PlayerTurn,
@@ -111,16 +151,63 @@ fn process_attacks(
     }
 }
 
+pub fn monster_ai_system(
+    turn_state: Res<TurnState>,
+    mut attack_events: EventWriter<AttackEvent>,
+    player_query: Query<Entity, With<Player>>,
+    current_combat: Res<CurrentCombat>,
+    monster_query: Query<&Monster>,
+) {
+    if *turn_state != TurnState::MonsterTurn {
+        return;
+    }
+    
+    let Some(monster_entity) = current_combat.monster_entity else {
+        return;
+    };
+    
+    // Check if the monster still exists
+    if monster_query.get(monster_entity).is_err() {
+        return;
+    }
+    
+    let Ok(player_entity) = player_query.get_single() else {
+        return;
+    };
+    
+    attack_events.send(AttackEvent {
+        attacker: monster_entity,
+        defender: player_entity,
+    });
+}
+
 fn check_combat_end(
-    monster_query: Query<&Health, With<Monster>>,
+    current_combat: Res<CurrentCombat>,
+    monster_query: Query<&Monster>,
+    player_query: Query<&Health, With<Player>>,
     mut game_state: ResMut<NextState<GameState>>,
     mut message_log: ResMut<MessageLog>,
 ) {
-    if monster_query.is_empty() {
-        message_log.add(
-            "You are victorious! You can move again.".to_string(),
-            Color::LIME_GREEN,
-        );
-        game_state.set(GameState::Exploring);
+    // Check if the current combat monster is dead
+    if let Some(monster_entity) = current_combat.monster_entity {
+        if monster_query.get(monster_entity).is_err() {
+            message_log.add(
+                "You are victorious! You can move again.".to_string(),
+                Color::LIME_GREEN,
+            );
+            game_state.set(GameState::Exploring);
+            return;
+        }
+    }
+    
+    // Check if player is dead
+    if let Ok(player_health) = player_query.get_single() {
+        if player_health.current <= 0 {
+            message_log.add(
+                "You have been slain! Game Over.".to_string(),
+                Color::RED,
+            );
+            game_state.set(GameState::GameOver);
+        }
     }
 }
