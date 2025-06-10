@@ -1,58 +1,89 @@
 // src/setup.rs
+
 use bevy::prelude::*;
 use crate::components::*;
-use crate::game_state::GameState;
 use crate::resources::MessageLog;
+use crate::game_state::GameState;
 use crate::templates::monster_templates::{MonsterTemplateRegistry, spawn_monster_from_template};
 
-pub fn setup_game(
+pub struct SetupPlugin;
+
+impl Plugin for SetupPlugin {
+    fn build(&self, app: &mut App) {
+        app
+            .add_systems(OnEnter(GameState::Exploring), (
+                cleanup_old_game,
+                setup_new_game,
+            ).chain());
+    }
+}
+
+fn cleanup_old_game(
     mut commands: Commands,
-    mut next_state: ResMut<NextState<GameState>>,
+    entities: Query<Entity, Or<(With<Player>, With<Monster>)>>,
     mut message_log: ResMut<MessageLog>,
 ) {
-    // Initialize and insert the monster template registry
-    let registry = MonsterTemplateRegistry::new();
+    // Clear all game entities
+    for entity in entities.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
     
-    // Spawn the player
+    // Clear message log
+    message_log.messages.clear();
+}
+
+fn setup_new_game(
+    mut commands: Commands,
+    mut message_log: ResMut<MessageLog>,
+    template_registry: Res<MonsterTemplateRegistry>,
+) {
+    // Spawn the player at (0, 0)
     commands.spawn((
         Player,
-        Name("Hero".to_string()),
-        Position { x: 0, y: 0, level: 1 },
-        Health { current: 100, max: 100 },
-        Stats { strength: 10, dexterity: 10, intelligence: 10, constitution: 10 },
-        CombatStats { damage: 5, defense: 2, accuracy: 85, evasion: 10 },
-        Inventory { items: Vec::new(), capacity: 20 },
+        Position { x: 0, y: 0, level: 0 },
+        Health { current: 30, max: 30 },
+        Stats {
+            strength: 10,
+            dexterity: 10,
+            intelligence: 10,
+            constitution: 10,
+        },
+        CombatStats {
+            damage: 5,
+            defense: 2,
+            accuracy: 75,
+            evasion: 10,
+        },
+        Name("Player".to_string()),
     ));
 
-    // Spawn a Raging Goblin using the template system
-    spawn_monster_from_template(
+    // Spawn monsters from templates
+    let raging_goblin = spawn_monster_from_template(
         &mut commands,
-        &registry,
-        "raging_goblin",
-        Position { x: 5, y: 5, level: 1 },
-        Some(4), // Spawn at level 4
+        &template_registry,
+        "goblin_raging",
+        Position { x: 5, y: 5, level: 0 },
+        Some(3), // level 3
     );
     
-    // Spawn a regular goblin at a random level within its range
-    spawn_monster_from_template(
-        &mut commands,
-        &registry,
-        "goblin",
-        Position { x: -3, y: 2, level: 1 },
-        None, // Let the system choose a random level
-    );
+    if raging_goblin.is_none() {
+        eprintln!("Failed to spawn raging goblin - template not found");
+    }
 
-    // Insert the registry as a resource AFTER using it
-    commands.insert_resource(registry);
+    let goblin = spawn_monster_from_template(
+        &mut commands,
+        &template_registry,
+        "goblin",
+        Position { x: -3, y: 2, level: 0 },
+        Some(1), // level 1
+    );
+    
+    if goblin.is_none() {
+        eprintln!("Failed to spawn goblin - template not found");
+    }
 
     message_log.add(
-        "Welcome to Myths of Ulan! The template system is now active.".to_string(),
+        "Welcome to Myths of Ulan! Move with WASD or arrow keys.".to_string(),
         Color::LIME_GREEN,
     );
-    message_log.add(
-        "A Raging Goblin lurks at (5, 5) and a regular Goblin at (-3, 2).".to_string(),
-        Color::YELLOW,
-    );
-
-    next_state.set(GameState::MainMenu);
 }

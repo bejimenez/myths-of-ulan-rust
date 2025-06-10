@@ -1,4 +1,4 @@
-// src/plugins/ui.rs - ENHANCED WITH MONSTER DEBUG PANEL
+// src/plugins/ui.rs - ENHANCED WITH GAME OVER SCREEN
 
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
@@ -18,11 +18,144 @@ pub struct UiPlugin;
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
         app
+            .init_resource::<GameOverStats>()
             .add_systems(Update, main_menu_system.run_if(in_state(GameState::MainMenu)))
             .add_systems(
                 Update,
                 ui_system.run_if(in_state(GameState::Exploring).or_else(in_state(GameState::InCombat)))
-            );
+            )
+            .add_systems(Update, game_over_system.run_if(in_state(GameState::GameOver)))
+            .add_systems(OnEnter(GameState::GameOver), capture_game_over_stats)
+            .add_systems(OnExit(GameState::GameOver), cleanup_game_over);
+    }
+}
+
+#[derive(Resource, Default)]
+struct GameOverStats {
+    killer_name: String,
+    player_level: i32,
+    monsters_slain: i32,
+    final_stats: Option<(i32, i32, i32, i32)>, // STR, DEX, INT, CON
+}
+
+fn capture_game_over_stats(
+    mut game_over_stats: ResMut<GameOverStats>,
+    player_query: Query<&Stats, With<Player>>,
+    current_combat: Res<CurrentCombat>,
+    monster_query: Query<&Name, With<Monster>>,
+) {
+    // Capture player stats if available
+    if let Ok(stats) = player_query.get_single() {
+        game_over_stats.final_stats = Some((
+            stats.strength,
+            stats.dexterity,
+            stats.intelligence,
+            stats.constitution,
+        ));
+    }
+    
+    // Capture killer's name if in combat
+    if let Some(monster_entity) = current_combat.monster_entity {
+        if let Ok(monster_name) = monster_query.get(monster_entity) {
+            game_over_stats.killer_name = monster_name.0.clone();
+        }
+    }
+    
+    // TODO: Track monsters slain throughout the game
+    // For now, this is a placeholder
+    game_over_stats.monsters_slain = 0;
+}
+
+fn cleanup_game_over(
+    mut commands: Commands,
+    mut game_over_stats: ResMut<GameOverStats>,
+    entities: Query<Entity, Or<(With<Player>, With<Monster>)>>,
+) {
+    // Reset game over stats
+    *game_over_stats = GameOverStats::default();
+    
+    // Despawn all game entities
+    for entity in entities.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
+}
+
+fn game_over_system(
+    mut contexts: EguiContexts,
+    mut next_state: ResMut<NextState<GameState>>,
+    game_over_stats: Res<GameOverStats>,
+    keyboard: Res<ButtonInput<KeyCode>>,
+) {
+    egui::CentralPanel::default().show(contexts.ctx_mut(), |ui| {
+        ui.vertical_centered(|ui| {
+            // Title
+            ui.add_space(100.0);
+            ui.heading(egui::RichText::new("GAME OVER").size(48.0).color(egui::Color32::DARK_RED));
+            ui.add_space(30.0);
+            
+            // Death message
+            if !game_over_stats.killer_name.is_empty() {
+                ui.label(egui::RichText::new(format!("You were slain by {}!", game_over_stats.killer_name))
+                    .size(20.0)
+                    .color(egui::Color32::RED));
+            } else {
+                ui.label(egui::RichText::new("You have died!")
+                    .size(20.0)
+                    .color(egui::Color32::RED));
+            }
+            
+            ui.add_space(40.0);
+            
+            // Stats summary
+            ui.group(|ui| {
+                ui.label(egui::RichText::new("Final Statistics").size(18.0).strong());
+                ui.separator();
+                
+                if let Some((str, dex, int, con)) = game_over_stats.final_stats {
+                    ui.horizontal(|ui| {
+                        ui.label(format!("STR: {}", str));
+                        ui.separator();
+                        ui.label(format!("DEX: {}", dex));
+                        ui.separator();
+                        ui.label(format!("INT: {}", int));
+                        ui.separator();
+                        ui.label(format!("CON: {}", con));
+                    });
+                }
+                
+                if game_over_stats.monsters_slain > 0 {
+                    ui.label(format!("Monsters Slain: {}", game_over_stats.monsters_slain));
+                }
+            });
+            
+            ui.add_space(50.0);
+            
+            // Buttons
+            ui.horizontal(|ui| {
+                if ui.button(egui::RichText::new("Return to Main Menu").size(16.0)).clicked() {
+                    next_state.set(GameState::MainMenu);
+                }
+                
+                ui.add_space(20.0);
+                
+                if ui.button(egui::RichText::new("Quit Game").size(16.0)).clicked() {
+                    std::process::exit(0);
+                }
+            });
+            
+            ui.add_space(20.0);
+            ui.label(egui::RichText::new("Press M for Main Menu or Q to Quit")
+                .size(14.0)
+                .color(egui::Color32::GRAY));
+        });
+    });
+    
+    // Keyboard shortcuts
+    if keyboard.just_pressed(KeyCode::KeyM) {
+        next_state.set(GameState::MainMenu);
+    }
+    if keyboard.just_pressed(KeyCode::KeyQ) {
+        std::process::exit(0);
     }
 }
 
@@ -197,7 +330,7 @@ fn ui_system(
                         // Combat calculations helper
                         ui.group(|ui| {
                             ui.label(egui::RichText::new("Combat Calculations vs Player").strong());
-                            if let Ok((player_health, player_stats, _, player_combat)) = player_query.get_single() {
+                            if let Ok((player_health, _player_stats, _, player_combat)) = player_query.get_single() {
                                 ui.separator();
                                 
                                 // Monster attacking player

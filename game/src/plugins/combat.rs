@@ -1,7 +1,7 @@
-// src/plugins/combat.rs - FIXED FOR MULTIPLE MONSTERS
+// src/plugins/combat.rs - FIXED IMPORTS
 
 use bevy::prelude::*;
-use crate::components::{CombatStats, Health, Name, Player, Monster, Position};
+use crate::components::{CombatStats, Health, Name, Player, Monster};
 use crate::game_state::GameState;
 use crate::resources::{MessageLog, TurnState};
 
