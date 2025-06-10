@@ -2,6 +2,8 @@
   {
     "id": "goblin_warrior",
     "name": "Goblin Warrior",
+    "family": "Humanoid",
+    "type": "Goblin",
     "health": {
       "base_health": 35,
       "health_per_level": 6
@@ -34,6 +36,8 @@
   {
     "id": "goblin_archer",
     "name": "Goblin Archer",
+    "family": "Humanoid",
+    "type": "Goblin",
     "health": {
       "base_health": 25,
       "health_per_level": 4
@@ -64,35 +68,105 @@
     "display_color": [0.3, 0.5, 0.2]
   },
   {
-    "id": "goblin_berserker",
-    "name": "Goblin Berserker",
+    "id": "goblin_scout",
+    "name": "Goblin Scout",
+    "family": "Humanoid",
+    "type": "Goblin",
     "health": {
-      "base_health": 35,
-      "health_per_level": 5
+      "base_health": 20,
+      "health_per_level": 3
     },
     "stats": {
-      "base_strength": 7,
-      "base_dexterity": 2,
+      "base_strength": 4,
+      "base_dexterity": 10,
+      "base_intelligence": 6,
+      "base_constitution": 4,
+      "strength_per_level": 0.3,
+      "dexterity_per_level": 1.0,
+      "intelligence_per_level": 0.5,
+      "constitution_per_level": 0.3
+    },
+    "combat": {
+      "base_damage": 3,
+      "base_defense": 1,
+      "base_accuracy": 80,
+      "base_evasion": 25,
+      "damage_per_level": 0.4,
+      "defense_per_level": 0.2
+    },
+    "ai_type": "Defensive",
+    "level_range": [1, 6],
+    "experience_reward": 12,
+    "loot_table_id": "goblin_scout_loot",
+    "display_char": "g",
+    "display_color": [0.4, 0.6, 0.3]
+  },
+  {
+    "id": "goblin_berserker",
+    "name": "Goblin Berserker",
+    "family": "Humanoid",
+    "type": "Goblin",
+    "health": {
+      "base_health": 45,
+      "health_per_level": 8
+    },
+    "stats": {
+      "base_strength": 12,
+      "base_dexterity": 6,
       "base_intelligence": 2,
-      "base_constitution": 7,
-      "strength_per_level": 1.3,
-      "dexterity_per_level": 0.2,
-      "intelligence_per_level": 0.3,
+      "base_constitution": 10,
+      "strength_per_level": 1.2,
+      "dexterity_per_level": 0.4,
+      "intelligence_per_level": 0.1,
       "constitution_per_level": 0.8
     },
     "combat": {
       "base_damage": 7,
-      "base_defense": 3,
+      "base_defense": 0,
       "base_accuracy": 65,
-      "base_evasion": 10,
-      "damage_per_level": 0.7,
-      "defense_per_level": 0.2
+      "base_evasion": 5,
+      "damage_per_level": 1.0,
+      "defense_per_level": 0.1
     },
     "ai_type": "Aggressive",
-    "level_range": [2, 10],
-    "experience_reward": 18,
+    "level_range": [3, 10],
+    "experience_reward": 25,
     "loot_table_id": "goblin_berserker_loot",
+    "display_char": "G",
+    "display_color": [0.6, 0.2, 0.2]
+  },
+  {
+    "id": "goblin_shaman",
+    "name": "Goblin Shaman",
+    "family": "Humanoid",
+    "type": "Goblin",
+    "health": {
+      "base_health": 28,
+      "health_per_level": 4
+    },
+    "stats": {
+      "base_strength": 3,
+      "base_dexterity": 6,
+      "base_intelligence": 12,
+      "base_constitution": 5,
+      "strength_per_level": 0.2,
+      "dexterity_per_level": 0.4,
+      "intelligence_per_level": 1.5,
+      "constitution_per_level": 0.4
+    },
+    "combat": {
+      "base_damage": 5,
+      "base_defense": 2,
+      "base_accuracy": 70,
+      "base_evasion": 15,
+      "damage_per_level": 0.8,
+      "defense_per_level": 0.3
+    },
+    "ai_type": "Defensive",
+    "level_range": [4, 12],
+    "experience_reward": 30,
+    "loot_table_id": "goblin_shaman_loot",
     "display_char": "g",
-    "display_color": [0.3, 0.5, 0.2]
+    "display_color": [0.6, 0.3, 0.8]
   }
 ]

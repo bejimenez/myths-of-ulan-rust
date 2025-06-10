@@ -13,6 +13,13 @@ pub struct MonsterTemplate {
     /// Display name for the monster
     pub name: String,
     
+    /// Monster family (e.g., Humanoid, Beast, Undead, Elemental)
+    pub family: MonsterFamily,
+    
+    /// Monster type (e.g., Goblin, Wolf, Skeleton)
+    #[serde(rename = "type")]
+    pub monster_type: String,
+    
     /// Base health values
     pub health: HealthTemplate,
     
@@ -36,7 +43,20 @@ pub struct MonsterTemplate {
     
     /// Visual representation
     pub display_char: char,
-    pub display_color: Color,
+    pub display_color: [f32; 3],
+}
+
+/// Monster families for categorization
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub enum MonsterFamily {
+    Humanoid,
+    Beast,
+    Undead,
+    Elemental,
+    Demon,
+    Dragon,
+    Construct,
+    Aberration,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -75,20 +95,35 @@ pub struct CombatStatsTemplate {
 #[derive(Resource, Default)]
 pub struct MonsterTemplateRegistry {
     templates: HashMap<String, MonsterTemplate>,
+    // Index by monster type for efficient filtering
+    by_type: HashMap<String, Vec<String>>,
+    // Index by family for efficient filtering
+    by_family: HashMap<MonsterFamily, Vec<String>>,
 }
 
 impl MonsterTemplateRegistry {
     pub fn new() -> Self {
-        let mut registry = Self {
+        Self {
             templates: HashMap::new(),
-        };
-        
-        // Register default templates
-        registry.register_default_templates();
-        registry
+            by_type: HashMap::new(),
+            by_family: HashMap::new(),
+        }
     }
     
     pub fn register(&mut self, template: MonsterTemplate) {
+        // Add to type index
+        self.by_type
+            .entry(template.monster_type.clone())
+            .or_insert_with(Vec::new)
+            .push(template.id.clone());
+            
+        // Add to family index
+        self.by_family
+            .entry(template.family.clone())
+            .or_insert_with(Vec::new)
+            .push(template.id.clone());
+            
+        // Add to main registry
         self.templates.insert(template.id.clone(), template);
     }
     
@@ -105,6 +140,51 @@ impl MonsterTemplateRegistry {
             .collect()
     }
     
+    /// Get all templates of a specific monster type
+    pub fn get_templates_by_type(&self, monster_type: &str) -> Vec<&MonsterTemplate> {
+        self.by_type
+            .get(monster_type)
+            .map(|ids| {
+                ids.iter()
+                    .filter_map(|id| self.templates.get(id))
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
+    
+    /// Get all templates of a specific family
+    pub fn get_templates_by_family(&self, family: &MonsterFamily) -> Vec<&MonsterTemplate> {
+        self.by_family
+            .get(family)
+            .map(|ids| {
+                ids.iter()
+                    .filter_map(|id| self.templates.get(id))
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
+    
+    /// Get templates by type within a level range
+    pub fn get_templates_by_type_and_level(&self, monster_type: &str, min_level: i32, max_level: i32) -> Vec<&MonsterTemplate> {
+        self.get_templates_by_type(monster_type)
+            .into_iter()
+            .filter(|template| {
+                template.level_range.0 <= max_level && template.level_range.1 >= min_level
+            })
+            .collect()
+    }
+    
+    /// Get a random template of a specific type within level range
+    pub fn get_random_template_by_type(&self, monster_type: &str, min_level: i32, max_level: i32) -> Option<&MonsterTemplate> {
+        let candidates = self.get_templates_by_type_and_level(monster_type, min_level, max_level);
+        if candidates.is_empty() {
+            None
+        } else {
+            let index = rand::random::<usize>() % candidates.len();
+            Some(candidates[index])
+        }
+    }
+    
     /// Get all template IDs
     pub fn get_all_template_ids(&self) -> Vec<&String> {
         self.templates.keys().collect()
@@ -118,76 +198,6 @@ impl MonsterTemplateRegistry {
     /// Get the number of registered templates
     pub fn count(&self) -> usize {
         self.templates.len()
-    }
-    
-    fn register_default_templates(&mut self) {
-        // Basic Goblin
-        self.register(MonsterTemplate {
-            id: "goblin".to_string(),
-            name: "Goblin".to_string(),
-            health: HealthTemplate {
-                base_health: 30,
-                health_per_level: 5,
-            },
-            stats: StatsTemplate {
-                base_strength: 6,
-                base_dexterity: 8,
-                base_intelligence: 4,
-                base_constitution: 6,
-                strength_per_level: 0.5,
-                dexterity_per_level: 1.0,
-                intelligence_per_level: 0.25,
-                constitution_per_level: 0.5,
-            },
-            combat: CombatStatsTemplate {
-                base_damage: 3,
-                base_defense: 1,
-                base_accuracy: 70,
-                base_evasion: 15,
-                damage_per_level: 0.5,
-                defense_per_level: 0.25,
-            },
-            ai_type: AIType::Aggressive,
-            level_range: (1, 5),
-            experience_reward: 10,
-            loot_table_id: Some("goblin_loot".to_string()),
-            display_char: 'g',
-            display_color: Color::rgb(0.0, 0.7, 0.0),
-        });
-        
-        // Raging Goblin - Enhanced variant
-        self.register(MonsterTemplate {
-            id: "raging_goblin".to_string(),
-            name: "Raging Goblin".to_string(),
-            health: HealthTemplate {
-                base_health: 45,
-                health_per_level: 8,
-            },
-            stats: StatsTemplate {
-                base_strength: 10,
-                base_dexterity: 10,
-                base_intelligence: 3,
-                base_constitution: 8,
-                strength_per_level: 1.0,
-                dexterity_per_level: 0.75,
-                intelligence_per_level: 0.1,
-                constitution_per_level: 0.75,
-            },
-            combat: CombatStatsTemplate {
-                base_damage: 6,
-                base_defense: 2,
-                base_accuracy: 80,
-                base_evasion: 10,
-                damage_per_level: 1.0,
-                defense_per_level: 0.5,
-            },
-            ai_type: AIType::Aggressive,
-            level_range: (3, 8),
-            experience_reward: 25,
-            loot_table_id: Some("goblin_loot".to_string()),
-            display_char: 'G',
-            display_color: Color::rgb(0.8, 0.2, 0.2),
-        });
     }
 }
 
