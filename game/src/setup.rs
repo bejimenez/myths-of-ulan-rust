@@ -12,11 +12,17 @@ pub struct SetupPlugin;
 impl Plugin for SetupPlugin {
     fn build(&self, app: &mut App) {
         app
-            .add_systems(OnEnter(GameState::Exploring), (
+            .add_systems(OnEnter(GameState::NewGameSetup), (
                 cleanup_old_game,
                 setup_new_game,
+                transition_to_exploring,
             ).chain());
     }
+}
+
+fn transition_to_exploring(mut next_state: ResMut<NextState<GameState>>) {
+    info!("Game setup complete, transitioning to Exploring state.");
+    next_state.set(GameState::Exploring);
 }
 
 fn cleanup_old_game(

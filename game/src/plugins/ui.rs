@@ -166,7 +166,7 @@ fn main_menu_system(mut contexts: EguiContexts, mut next_state: ResMut<NextState
             ui.heading("MYTHS OF ULAN");
             ui.add_space(50.0);
             if ui.button("New Game").clicked() {
-                next_state.set(GameState::Exploring);
+                next_state.set(GameState::NewGameSetup);
             }
             if ui.button("Quit").clicked() {
                 std::process::exit(0);

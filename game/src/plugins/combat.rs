@@ -108,6 +108,7 @@ fn process_attacks(
     mut commands: Commands,
     mut attack_events: EventReader<AttackEvent>,
     mut combatants: Query<(&mut Health, &CombatStats, &Name)>,
+    player_query: Query<(), With<Player>>,
     mut message_log: ResMut<MessageLog>,
     mut turn_state: ResMut<TurnState>,
 ) {
@@ -134,7 +135,10 @@ fn process_attacks(
                     format!("{} has been slain!", defender_name.0),
                     Color::DARK_GRAY,
                 );
-                commands.entity(event.defender).despawn();
+                // Only despawn the defender if it's not the player
+                if player_query.get(event.defender).is_err() {
+                    commands.entity(event.defender).despawn();
+                }
             }
         } else {
             message_log.add(
