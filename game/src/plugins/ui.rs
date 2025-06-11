@@ -1,4 +1,4 @@
-// src/plugins/ui.rs - ENHANCED WITH GAME OVER SCREEN
+// src/plugins/ui.rs
 
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
